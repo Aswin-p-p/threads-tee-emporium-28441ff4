@@ -14,7 +14,7 @@ import { useToast } from '../hooks/use-toast';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const { cartItems, getTotalPrice, clearCart } = useCart();
+  const { items, getTotalPrice, clearCart } = useCart();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
   
@@ -33,10 +33,10 @@ const Checkout = () => {
     if (!isAuthenticated) {
       navigate('/login');
     }
-    if (cartItems.length === 0) {
+    if (items.length === 0) {
       navigate('/cart');
     }
-  }, [isAuthenticated, cartItems, navigate]);
+  }, [isAuthenticated, items, navigate]);
 
   const handleAddressChange = (field: string, value: string) => {
     setShippingAddress(prev => ({
@@ -69,7 +69,7 @@ const Checkout = () => {
   const shippingCost = getTotalPrice() > 999 ? 0 : 99;
   const totalAmount = getTotalPrice() + shippingCost;
 
-  if (cartItems.length === 0) {
+  if (items.length === 0) {
     return null;
   }
 
@@ -203,7 +203,7 @@ const Checkout = () => {
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {cartItems.map((item) => (
+                {items.map((item) => (
                   <div key={`${item.product._id}-${item.size}-${item.color}`} className="flex justify-between items-center">
                     <div>
                       <h4 className="font-medium">{item.product.name}</h4>

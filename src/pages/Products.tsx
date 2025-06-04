@@ -38,7 +38,7 @@ const Products = () => {
 
   const categories = ['Men', 'Women', 'Kids', 'Sports', 'Casual', 'Formal'];
   const sortOptions = [
-    { value: '', label: 'Default' },
+    { value: 'default', label: 'Default' },
     { value: 'price', label: 'Price: Low to High' },
     { value: '-price', label: 'Price: High to Low' },
     { value: '-rating', label: 'Rating: High to Low' },
@@ -58,6 +58,26 @@ const Products = () => {
       setPagination(response.pagination || {});
     } catch (error) {
       console.error('Error fetching products:', error);
+      // Set some mock data for now since API is not available
+      setProducts([
+        {
+          _id: '1',
+          name: 'Classic T-Shirt',
+          price: 599,
+          images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400'],
+          rating: 4.5,
+          category: 'Men'
+        },
+        {
+          _id: '2',
+          name: 'Premium Polo',
+          price: 899,
+          images: ['https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400'],
+          rating: 4.8,
+          category: 'Men'
+        }
+      ]);
+      setPagination({ page: 1, pages: 1, count: 2, total: 2 });
     } finally {
       setLoading(false);
     }
@@ -68,7 +88,7 @@ const Products = () => {
     
     if (keyword) params.append('keyword', keyword);
     if (category) params.append('category', category);
-    if (sortBy) params.append('sort', sortBy);
+    if (sortBy && sortBy !== 'default') params.append('sort', sortBy);
     if (priceRange[0] > 0) params.append('minPrice', priceRange[0].toString());
     if (priceRange[1] < 5000) params.append('maxPrice', priceRange[1].toString());
     params.append('page', currentPage.toString());
@@ -87,7 +107,7 @@ const Products = () => {
     
     if (keyword) params.set('keyword', keyword);
     if (category) params.set('category', category);
-    if (sortBy) params.set('sort', sortBy);
+    if (sortBy && sortBy !== 'default') params.set('sort', sortBy);
     if (priceRange[0] > 0) params.set('minPrice', priceRange[0].toString());
     if (priceRange[1] < 5000) params.set('maxPrice', priceRange[1].toString());
     params.set('page', '1');
@@ -99,7 +119,7 @@ const Products = () => {
   const clearFilters = () => {
     setKeyword('');
     setCategory('');
-    setSortBy('');
+    setSortBy('default');
     setPriceRange([0, 5000]);
     setCurrentPage(1);
     setSearchParams({});
@@ -172,7 +192,7 @@ const Products = () => {
                         <SelectValue placeholder="All Categories" />
                       </SelectTrigger>
                       <SelectContent className="bg-white">
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         {categories.map((cat) => (
                           <SelectItem key={cat} value={cat}>
                             {cat}
@@ -200,7 +220,7 @@ const Products = () => {
                   {/* Sort */}
                   <div>
                     <label className="text-sm font-medium mb-2 block">Sort By</label>
-                    <Select value={sortBy} onValueChange={setSortBy}>
+                    <Select value={sortBy || 'default'} onValueChange={setSortBy}>
                       <SelectTrigger>
                         <SelectValue placeholder="Default" />
                       </SelectTrigger>
