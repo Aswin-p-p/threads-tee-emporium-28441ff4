@@ -53,31 +53,22 @@ const Products = () => {
     try {
       setLoading(true);
       const queryString = buildQueryString();
+      console.log('Fetching products with query:', queryString);
       const response = await productsAPI.getProducts(queryString);
-      setProducts(response.data || []);
-      setPagination(response.pagination || {});
+      console.log('Products API response:', response);
+      
+      if (response.success) {
+        setProducts(response.data || []);
+        setPagination(response.pagination || { page: 1, pages: 1, count: 0, total: 0 });
+      } else {
+        console.error('Failed to fetch products:', response.message);
+        setProducts([]);
+        setPagination({ page: 1, pages: 1, count: 0, total: 0 });
+      }
     } catch (error) {
       console.error('Error fetching products:', error);
-      // Set some mock data for now since API is not available
-      setProducts([
-        {
-          _id: '1',
-          name: 'Classic T-Shirt',
-          price: 599,
-          images: ['https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400'],
-          rating: 4.5,
-          category: 'Men'
-        },
-        {
-          _id: '2',
-          name: 'Premium Polo',
-          price: 899,
-          images: ['https://images.unsplash.com/photo-1586790170083-2f9ceadc732d?w=400'],
-          rating: 4.8,
-          category: 'Men'
-        }
-      ]);
-      setPagination({ page: 1, pages: 1, count: 2, total: 2 });
+      setProducts([]);
+      setPagination({ page: 1, pages: 1, count: 0, total: 0 });
     } finally {
       setLoading(false);
     }
@@ -300,7 +291,9 @@ const Products = () => {
               <Card className="text-center py-12">
                 <CardContent>
                   <p className="text-xl text-gray-600 mb-4">No products found</p>
-                  <p className="text-gray-500 mb-6">Try adjusting your filters or search terms</p>
+                  <p className="text-gray-500 mb-6">
+                    {keyword || category ? 'Try adjusting your filters or search terms' : 'No products are available at the moment'}
+                  </p>
                   <Button onClick={clearFilters}>Clear Filters</Button>
                 </CardContent>
               </Card>

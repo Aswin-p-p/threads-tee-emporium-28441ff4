@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,15 +11,16 @@ import { useAuth } from '../contexts/AuthContext';
 interface Product {
   _id: string;
   name: string;
-  description: string;
+  description?: string;
   price: number;
   images: string[];
   category: string;
-  sizes: string[];
-  colors: string[];
-  rating: number;
-  numReviews: number;
-  inStock: boolean;
+  sizes?: string[];
+  colors?: string[];
+  rating?: number;
+  numReviews?: number;
+  inStock?: boolean;
+  stock?: number;
 }
 
 interface ProductCardProps {
@@ -29,18 +30,34 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   const handleAddToCart = () => {
     if (!isAuthenticated) {
-      // Redirect to login or show login modal
+      navigate('/login');
       return;
     }
     
     // Add with default size and color
-    const defaultSize = product.sizes[0] || 'M';
-    const defaultColor = product.colors[0] || 'Black';
+    const defaultSize = product.sizes?.[0] || 'M';
+    const defaultColor = product.colors?.[0] || 'Black';
     addToCart(product._id, 1, defaultSize, defaultColor);
   };
+
+  const handleBuyNow = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    
+    // Add to cart and redirect to checkout
+    const defaultSize = product.sizes?.[0] || 'M';
+    const defaultColor = product.colors?.[0] || 'Black';
+    addToCart(product._id, 1, defaultSize, defaultColor);
+    navigate('/checkout');
+  };
+
+  const isOutOfStock = product.stock === 0 || product.inStock === false;
 
   return (
     <Card className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-2 overflow-hidden">
@@ -52,7 +69,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             className="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300"
           />
         </Link>
-        {!product.inStock && (
+        {isOutOfStock && (
           <Badge variant="destructive" className="absolute top-2 left-2">
             Out of Stock
           </Badge>
@@ -61,7 +78,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <Button
             size="sm"
             onClick={handleAddToCart}
-            disabled={!product.inStock || !isAuthenticated}
+            disabled={isOutOfStock}
             className="rounded-full w-10 h-10 p-0"
           >
             <ShoppingCart className="h-4 w-4" />
@@ -74,12 +91,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           <Badge variant="secondary" className="text-xs">
             {product.category}
           </Badge>
-          <div className="flex items-center space-x-1">
-            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-            <span className="text-sm text-gray-600">
-              {product.rating.toFixed(1)} ({product.numReviews})
-            </span>
-          </div>
+          {product.rating && (
+            <div className="flex items-center space-x-1">
+              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm text-gray-600">
+                {product.rating.toFixed(1)} {product.numReviews && `(${product.numReviews})`}
+              </span>
+            </div>
+          )}
         </div>
         
         <Link to={`/products/${product._id}`}>
@@ -88,35 +107,49 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </h3>
         </Link>
         
-        <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-          {product.description}
-        </p>
+        {product.description && (
+          <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+            {product.description}
+          </p>
+        )}
         
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-3">
           <div className="text-2xl font-bold text-primary-600">
             ₹{product.price}
           </div>
-          <div className="flex space-x-1">
-            {product.sizes.slice(0, 3).map((size) => (
-              <Badge key={size} variant="outline" className="text-xs">
-                {size}
-              </Badge>
-            ))}
-            {product.sizes.length > 3 && (
-              <Badge variant="outline" className="text-xs">
-                +{product.sizes.length - 3}
-              </Badge>
-            )}
-          </div>
+          {product.sizes && product.sizes.length > 0 && (
+            <div className="flex space-x-1">
+              {product.sizes.slice(0, 3).map((size) => (
+                <Badge key={size} variant="outline" className="text-xs">
+                  {size}
+                </Badge>
+              ))}
+              {product.sizes.length > 3 && (
+                <Badge variant="outline" className="text-xs">
+                  +{product.sizes.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
         </div>
         
-        <Button
-          className="w-full mt-3"
-          onClick={handleAddToCart}
-          disabled={!product.inStock || !isAuthenticated}
-        >
-          {!isAuthenticated ? 'Login to Buy' : !product.inStock ? 'Out of Stock' : 'Add to Cart'}
-        </Button>
+        <div className="grid grid-cols-2 gap-2">
+          <Button
+            onClick={handleAddToCart}
+            disabled={isOutOfStock}
+            variant="outline"
+            size="sm"
+          >
+            {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
+          </Button>
+          <Button
+            onClick={handleBuyNow}
+            disabled={isOutOfStock}
+            size="sm"
+          >
+            Buy Now
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );

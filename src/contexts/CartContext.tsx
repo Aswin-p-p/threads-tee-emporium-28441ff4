@@ -41,7 +41,17 @@ export const useCart = () => {
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const { isAuthenticated } = useAuth();
+  
+  // Handle auth context safely
+  let isAuthenticated = false;
+  try {
+    const auth = useAuth();
+    isAuthenticated = auth.isAuthenticated;
+  } catch (error) {
+    // AuthProvider not available yet, will retry when it becomes available
+    isAuthenticated = false;
+  }
+  
   const { toast } = useToast();
 
   useEffect(() => {
