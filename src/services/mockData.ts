@@ -77,9 +77,32 @@ export const mockProducts = [
 
 export const mockCartItems = [];
 
+// Mock users - including admin user
+export const mockUsers = [
+  {
+    _id: 'user1',
+    name: 'John Doe',
+    email: 'john@example.com',
+    role: 'user'
+  },
+  {
+    _id: 'admin1',
+    name: 'Admin User',
+    email: 'admin@example.com', 
+    role: 'admin'
+  }
+];
+
 export const mockUser = {
   _id: 'user1',
   name: 'John Doe',
   email: 'john@example.com',
   role: 'user'
+};
+
+export const mockAdminUser = {
+  _id: 'admin1',
+  name: 'Admin User',
+  email: 'admin@example.com',
+  role: 'admin'
 };

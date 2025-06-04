@@ -44,7 +44,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) {
       try {
         const response = await authAPI.getMe();
-        setUser(response.data);
+        if (response.success) {
+          setUser(response.data);
+        } else {
+          localStorage.removeItem('token');
+        }
       } catch (error) {
         localStorage.removeItem('token');
       }
@@ -55,13 +59,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
       const response = await authAPI.login({ email, password });
-      localStorage.setItem('token', response.token);
-      setUser(response.data);
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-      });
-      return true;
+      if (response.success) {
+        setUser(response.data.user);
+        toast({
+          title: "Login Successful",
+          description: response.message || "Welcome back!",
+        });
+        return true;
+      } else {
+        throw new Error(response.message || 'Login failed');
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -75,13 +82,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (userData: any): Promise<boolean> => {
     try {
       const response = await authAPI.register(userData);
-      localStorage.setItem('token', response.token);
-      setUser(response.data);
-      toast({
-        title: "Registration Successful",
-        description: "Welcome to Vexa!",
-      });
-      return true;
+      if (response.success) {
+        setUser(response.data.user);
+        toast({
+          title: "Registration Successful",
+          description: response.message || "Welcome to Vexa!",
+        });
+        return true;
+      } else {
+        throw new Error(response.message || 'Registration failed');
+      }
     } catch (error: any) {
       toast({
         title: "Registration Failed",

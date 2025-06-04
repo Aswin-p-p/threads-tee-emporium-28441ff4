@@ -1,4 +1,3 @@
-import { mockProducts, mockCartItems } from './mockData';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1';
 
@@ -42,13 +41,23 @@ export const authAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      if (data.success && data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+      }
+      return data;
     } catch (error) {
       // Mock registration success
       await delay(500);
+      const mockToken = 'mock-token-' + Date.now();
+      localStorage.setItem('token', mockToken);
       return {
         success: true,
-        data: { user: { name: userData.name, email: userData.email }, token: 'mock-token' }
+        data: { 
+          user: { _id: 'mock-user-id', name: userData.name, email: userData.email, role: 'user' }, 
+          token: mockToken 
+        },
+        message: 'Registration successful'
       };
     }
   },
@@ -60,14 +69,23 @@ export const authAPI = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      if (data.success && data.data?.token) {
+        localStorage.setItem('token', data.data.token);
+      }
+      return data;
     } catch (error) {
       // Mock login success
       await delay(500);
-      localStorage.setItem('token', 'mock-token');
+      const mockToken = 'mock-token-' + Date.now();
+      localStorage.setItem('token', mockToken);
       return {
         success: true,
-        data: { user: { name: 'John Doe', email: credentials.email }, token: 'mock-token' }
+        data: { 
+          user: { _id: 'mock-user-id', name: 'John Doe', email: credentials.email, role: 'user' }, 
+          token: mockToken 
+        },
+        message: 'Login successful'
       };
     }
   },
@@ -77,13 +95,15 @@ export const authAPI = {
       const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: getAuthHeaders(),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       // Return mock user data
       await delay(300);
       return {
         success: true,
-        data: { name: 'John Doe', email: 'john@example.com', role: 'user' }
+        data: { _id: 'mock-user-id', name: 'John Doe', email: 'john@example.com', role: 'user' },
+        message: 'User data retrieved'
       };
     }
   },
@@ -98,7 +118,7 @@ export const authAPI = {
       return handleResponse(response);
     } catch (error) {
       await delay(500);
-      return { success: true, data: userData };
+      return { success: true, data: userData, message: 'Profile updated successfully' };
     }
   },
 
@@ -115,6 +135,34 @@ export const authAPI = {
       return { success: true, message: 'Password updated successfully' };
     }
   },
+
+  forgotPassword: async (email: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgotpassword`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      await delay(500);
+      return { success: true, message: 'Password reset email sent' };
+    }
+  },
+
+  resetPassword: async (token: string, password: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resetpassword/${token}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      });
+      return handleResponse(response);
+    } catch (error) {
+      await delay(500);
+      return { success: true, message: 'Password reset successful' };
+    }
+  },
 };
 
 // Products API
@@ -122,7 +170,8 @@ export const productsAPI = {
   getProducts: async (queryParams = '') => {
     try {
       const response = await fetch(`${API_BASE_URL}/products${queryParams}`);
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       // Return mock products data
       await delay(500);
@@ -131,7 +180,13 @@ export const productsAPI = {
       const urlParams = new URLSearchParams(queryParams.replace('?', ''));
       const keyword = urlParams.get('keyword');
       const category = urlParams.get('category');
+      const minPrice = urlParams.get('minPrice');
+      const maxPrice = urlParams.get('maxPrice');
+      const page = parseInt(urlParams.get('page') || '1');
+      const limit = parseInt(urlParams.get('limit') || '12');
       
+      // Import mock data
+      const { mockProducts } = await import('./mockData');
       let filteredProducts = [...mockProducts];
       
       if (keyword) {
@@ -145,14 +200,31 @@ export const productsAPI = {
           product.category.toLowerCase() === category.toLowerCase()
         );
       }
+
+      if (minPrice) {
+        filteredProducts = filteredProducts.filter(product => 
+          product.price >= parseInt(minPrice)
+        );
+      }
+
+      if (maxPrice) {
+        filteredProducts = filteredProducts.filter(product => 
+          product.price <= parseInt(maxPrice)
+        );
+      }
+
+      // Pagination
+      const startIndex = (page - 1) * limit;
+      const endIndex = startIndex + limit;
+      const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
       
       return {
         success: true,
-        data: filteredProducts,
+        data: paginatedProducts,
         pagination: {
-          page: 1,
-          pages: 1,
-          count: filteredProducts.length,
+          page,
+          pages: Math.ceil(filteredProducts.length / limit),
+          count: paginatedProducts.length,
           total: filteredProducts.length
         }
       };
@@ -162,9 +234,11 @@ export const productsAPI = {
   getProduct: async (id: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/products/${id}`);
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       await delay(300);
+      const { mockProducts } = await import('./mockData');
       const product = mockProducts.find(p => p._id === id);
       if (!product) {
         throw new Error('Product not found');
@@ -183,7 +257,7 @@ export const productsAPI = {
       return handleResponse(response);
     } catch (error) {
       await delay(500);
-      return { success: true, data: { ...productData, _id: Date.now().toString() } };
+      return { success: true, data: { ...productData, _id: Date.now().toString() }, message: 'Product created successfully' };
     }
   },
 
@@ -197,7 +271,7 @@ export const productsAPI = {
       return handleResponse(response);
     } catch (error) {
       await delay(500);
-      return { success: true, data: { ...productData, _id: id } };
+      return { success: true, data: { ...productData, _id: id }, message: 'Product updated successfully' };
     }
   },
 
@@ -224,7 +298,24 @@ export const productsAPI = {
       return handleResponse(response);
     } catch (error) {
       await delay(500);
-      return { success: true, data: reviewData };
+      return { success: true, data: reviewData, message: 'Review added successfully' };
+    }
+  },
+
+  uploadImages: async (id: string, images: FormData) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/products/${id}/images`, {
+        method: 'PUT',
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: images,
+      });
+      return handleResponse(response);
+    } catch (error) {
+      await delay(500);
+      return { success: true, message: 'Images uploaded successfully' };
     }
   },
 };
@@ -236,7 +327,8 @@ export const cartAPI = {
       const response = await fetch(`${API_BASE_URL}/cart`, {
         headers: getAuthHeaders(),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       await delay(300);
       // Get cart items from localStorage or return empty array
@@ -252,11 +344,13 @@ export const cartAPI = {
         headers: getAuthHeaders(),
         body: JSON.stringify(productData),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       await delay(300);
       
       // Find the product from mock data
+      const { mockProducts } = await import('./mockData');
       const product = mockProducts.find(p => p._id === productData.productId);
       if (!product) {
         throw new Error('Product not found');
@@ -290,7 +384,7 @@ export const cartAPI = {
       // Save to localStorage
       localStorage.setItem('cartItems', JSON.stringify(cartItems));
       
-      return { success: true, data: cartItems };
+      return { success: true, data: cartItems, message: 'Item added to cart' };
     }
   },
 
@@ -313,7 +407,7 @@ export const cartAPI = {
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
       }
       
-      return { success: true, data: cartItems };
+      return { success: true, data: cartItems, message: 'Cart updated' };
     }
   },
 
@@ -331,7 +425,7 @@ export const cartAPI = {
       const filteredItems = cartItems.filter((item: any) => item.product._id !== productId);
       localStorage.setItem('cartItems', JSON.stringify(filteredItems));
       
-      return { success: true, data: filteredItems };
+      return { success: true, data: filteredItems, message: 'Item removed from cart' };
     }
   },
 
@@ -345,7 +439,7 @@ export const cartAPI = {
     } catch (error) {
       await delay(300);
       localStorage.removeItem('cartItems');
-      return { success: true, data: [] };
+      return { success: true, data: [], message: 'Cart cleared' };
     }
   },
 };
@@ -359,16 +453,20 @@ export const ordersAPI = {
         headers: getAuthHeaders(),
         body: JSON.stringify(orderData),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       await delay(500);
+      const mockOrder = { 
+        _id: Date.now().toString(), 
+        ...orderData, 
+        orderStatus: 'pending',
+        createdAt: new Date().toISOString()
+      };
       return { 
         success: true, 
-        data: { 
-          _id: Date.now().toString(), 
-          ...orderData, 
-          status: 'pending' 
-        } 
+        data: mockOrder,
+        message: 'Order created successfully'
       };
     }
   },
@@ -385,8 +483,9 @@ export const ordersAPI = {
         success: true, 
         data: { 
           _id: id, 
-          status: 'delivered', 
-          total: 1200 
+          orderStatus: 'delivered', 
+          totalPrice: 1200,
+          createdAt: new Date().toISOString()
         } 
       };
     }
@@ -397,7 +496,8 @@ export const ordersAPI = {
       const response = await fetch(`${API_BASE_URL}/orders/myorders`, {
         headers: getAuthHeaders(),
       });
-      return handleResponse(response);
+      const data = await handleResponse(response);
+      return data;
     } catch (error) {
       await delay(300);
       return { success: true, data: [] };
@@ -446,9 +546,9 @@ export const ordersAPI = {
 
 // Admin API
 export const adminAPI = {
-  getUsers: async () => {
+  getUsers: async (queryParams = '') => {
     try {
-      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users${queryParams}`, {
         headers: getAuthHeaders(),
       });
       return handleResponse(response);
@@ -480,7 +580,7 @@ export const adminAPI = {
       return handleResponse(response);
     } catch (error) {
       await delay(500);
-      return { success: true, data: userData };
+      return { success: true, data: userData, message: 'User updated successfully' };
     }
   },
 
@@ -509,6 +609,7 @@ export const adminAPI = {
         success: true, 
         data: { 
           totalUsers: 150, 
+          totalProducts: 25,
           totalOrders: 1200, 
           totalRevenue: 85000 
         } 
@@ -517,7 +618,7 @@ export const adminAPI = {
   },
 };
 
-// Payment API
+// Payment API (Razorpay)
 export const paymentAPI = {
   createOrder: async (orderData: any) => {
     try {
@@ -548,7 +649,7 @@ export const paymentAPI = {
   },
 };
 
-// Upload API
+// Upload API (Cloudinary)
 export const uploadAPI = {
   uploadImage: async (file: File) => {
     try {
