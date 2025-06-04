@@ -65,11 +65,11 @@ const Header = () => {
             <Link to="/products" className="text-gray-700 hover:text-primary-600 transition-colors">
               Products
             </Link>
-            <Link to="/categories" className="text-gray-700 hover:text-primary-600 transition-colors">
-              Categories
-            </Link>
             <Link to="/about" className="text-gray-700 hover:text-primary-600 transition-colors">
               About
+            </Link>
+            <Link to="/contact" className="text-gray-700 hover:text-primary-600 transition-colors">
+              Contact
             </Link>
           </nav>
 
@@ -178,18 +178,18 @@ const Header = () => {
                 Products
               </Link>
               <Link
-                to="/categories"
-                className="py-2 text-gray-700 hover:text-primary-600"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Categories
-              </Link>
-              <Link
                 to="/about"
                 className="py-2 text-gray-700 hover:text-primary-600"
                 onClick={() => setIsMenuOpen(false)}
               >
                 About
+              </Link>
+              <Link
+                to="/contact"
+                className="py-2 text-gray-700 hover:text-primary-600"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Contact
               </Link>
               
               {!isAuthenticated && (

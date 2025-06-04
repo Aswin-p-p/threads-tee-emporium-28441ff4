@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Star, ShoppingBag, Truck, Shield, Award } from 'lucide-react';
 import Header from '../components/Header';
 import ProductCard from '../components/ProductCard';
@@ -11,29 +10,28 @@ import { productsAPI } from '../services/api';
 
 const Index = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchFeaturedProducts();
+    fetchProducts();
   }, []);
 
-  const fetchFeaturedProducts = async () => {
+  const fetchProducts = async () => {
     try {
-      const response = await productsAPI.getProducts('?limit=8&sort=-rating');
-      setFeaturedProducts(response.data || []);
+      // Fetch featured products (top rated)
+      const featuredResponse = await productsAPI.getProducts('?limit=8&sort=-rating');
+      setFeaturedProducts(featuredResponse.data || []);
+      
+      // Fetch all products for main section
+      const allResponse = await productsAPI.getProducts('?limit=12');
+      setAllProducts(allResponse.data || []);
     } catch (error) {
-      console.error('Error fetching featured products:', error);
+      console.error('Error fetching products:', error);
     } finally {
       setLoading(false);
     }
   };
-
-  const categories = [
-    { name: 'Men', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400', link: '/products?category=Men' },
-    { name: 'Women', image: 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?w=400', link: '/products?category=Women' },
-    { name: 'Kids', image: 'https://images.unsplash.com/photo-1519238263530-99bdd11df2ea?w=400', link: '/products?category=Kids' },
-    { name: 'Sports', image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400', link: '/products?category=Sports' },
-  ];
 
   const features = [
     { icon: Truck, title: 'Free Shipping', description: 'On orders over ₹999' },
@@ -64,7 +62,7 @@ const Index = () => {
               <Link to="/products">Shop Now</Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="border-white text-white hover:bg-white hover:text-gray-900 px-8 py-4 text-lg">
-              <Link to="/categories">Browse Categories</Link>
+              <Link to="/about">Learn More</Link>
             </Button>
           </div>
           
@@ -110,35 +108,41 @@ const Index = () => {
         </div>
       </section>
 
-      {/* Categories */}
+      {/* All Products */}
       <section className="py-16 px-4 bg-gray-50">
         <div className="container mx-auto">
           <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold mb-4 gradient-text">Shop by Category</h2>
+            <h2 className="text-4xl font-bold mb-4 gradient-text">Our Products</h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Find the perfect t-shirt for every style and occasion
+              Explore our complete collection of premium t-shirts for every style and occasion
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {categories.map((category, index) => (
-              <Link key={index} to={category.link} className="group">
-                <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-                  <div className="relative h-64">
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                    <div className="absolute bottom-4 left-4 text-white">
-                      <h3 className="text-2xl font-bold">{category.name}</h3>
-                      <p className="text-sm opacity-90">Explore Collection</p>
-                    </div>
-                  </div>
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[...Array(12)].map((_, index) => (
+                <Card key={index} className="animate-pulse">
+                  <div className="h-64 bg-gray-200"></div>
+                  <CardContent className="p-4">
+                    <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded mb-2 w-3/4"></div>
+                    <div className="h-6 bg-gray-200 rounded"></div>
+                  </CardContent>
                 </Card>
-              </Link>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {allProducts.map((product) => (
+                <ProductCard key={product._id} product={product} />
+              ))}
+            </div>
+          )}
+          
+          <div className="text-center mt-12">
+            <Button size="lg" asChild>
+              <Link to="/products">View All Products</Link>
+            </Button>
           </div>
         </div>
       </section>
@@ -173,12 +177,6 @@ const Index = () => {
               ))}
             </div>
           )}
-          
-          <div className="text-center mt-12">
-            <Button size="lg" asChild>
-              <Link to="/products">View All Products</Link>
-            </Button>
-          </div>
         </div>
       </section>
 
@@ -222,7 +220,6 @@ const Index = () => {
               <h3 className="text-lg font-semibold mb-4">Quick Links</h3>
               <ul className="space-y-2 text-gray-400">
                 <li><Link to="/products" className="hover:text-white transition-colors">Products</Link></li>
-                <li><Link to="/categories" className="hover:text-white transition-colors">Categories</Link></li>
                 <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
                 <li><Link to="/contact" className="hover:text-white transition-colors">Contact</Link></li>
               </ul>
